@@ -15,5 +15,6 @@ namespace CapaEntidad
         public string Clave { get; set; }
         public bool Reestablecer { get; set; }
         public string Provincia { get; set; }
+        public DateTime FechaRegistro { get; set; }
     }
 }
