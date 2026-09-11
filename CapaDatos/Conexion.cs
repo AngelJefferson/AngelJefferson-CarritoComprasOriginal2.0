@@ -8,8 +8,9 @@ using System.Configuration;
 
 namespace CapaDatos
 {
-    public class Conexion
+    public static class Conexion
     {
-        public static string cn = ConfigurationManager.ConnectionStrings["cadena"].ToString();
+        // Propiedad de solo lectura con comprobación contra valores nulos
+        public static string cn => ConfigurationManager.ConnectionStrings["cadena"]?.ConnectionString ?? string.Empty;
     }
 }

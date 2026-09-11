@@ -3,36 +3,32 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Globalization;
-using System.Linq;
 using System.Text;
 
 namespace CapaDatos
 {
     public class CD_Producto
     {
-
         public List<Producto> Listar()
         {
             List<Producto> lista = new List<Producto>();
 
-            try
+            using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
             {
-                using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
+                try
                 {
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder query = new StringBuilder();
+                    query.AppendLine("SELECT p.IdProducto, p.Nombre, p.Descripcion, m.IdMarca, m.Descripcion AS DesMarca,");
+                    query.AppendLine("c.IdCategoria, c.Descripcion AS DesCategoria, p.Precio, p.Stock, p.RutaImagen,");
+                    query.AppendLine("p.NombreImagen, p.Activo");
+                    query.AppendLine("FROM tienda.PRODUCTO p");
+                    query.AppendLine("LEFT JOIN tienda.MARCA m ON m.IdMarca = p.IdMarca");
+                    query.AppendLine("LEFT JOIN tienda.CATEGORIA c ON c.IdCategoria = p.IdCategoria");
 
-                    // CORRECCIÓN: Usamos p.Descripcion directamente
-                    sb.AppendLine("SELECT p.IdProducto, p.Nombre, p.Descripcion,");
-                    sb.AppendLine("m.IdMarca, m.Descripcion [DesMarca],");
-                    sb.AppendLine("c.IdCategoria, c.Descripcion [DesCategoria],");
-                    sb.AppendLine("p.Precio, p.Stock, p.RutaImagen, p.NombreImagen, p.Activo");
-                    sb.AppendLine("FROM PRODUCTO p");
-                    sb.AppendLine("LEFT JOIN MARCA m on m.IdMarca = p.IdMarca");
-                    sb.AppendLine("LEFT JOIN CATEGORIA c on c.IdCATEGORIA = p.IdCATEGORIA");
-
-                    SqlCommand cmd = new SqlCommand(sb.ToString(), oconexion);
-                    cmd.CommandType = CommandType.Text;
+                    SqlCommand cmd = new SqlCommand(query.ToString(), oconexion)
+                    {
+                        CommandType = CommandType.Text
+                    };
 
                     oconexion.Open();
 
@@ -42,159 +38,116 @@ namespace CapaDatos
                         {
                             lista.Add(new Producto()
                             {
-                                IdProducto = Convert.ToInt32(dr["IdProducto"]),
-                                Nombre = dr["Nombre"].ToString(),
-                                // Aquí usamos el nombre de la columna que viene de la BD
-                                Descripcion = dr["Descripcion"].ToString(),
+                                IdProducto = dr["IdProducto"] != DBNull.Value ? Convert.ToInt32(dr["IdProducto"]) : 0,
+                                Nombre = dr["Nombre"] != DBNull.Value ? dr["Nombre"].ToString() : string.Empty,
+                                Descripcion = dr["Descripcion"] != DBNull.Value ? dr["Descripcion"].ToString() : string.Empty,
                                 oMarca = new Marca()
                                 {
-                                    IdMarca = Convert.ToInt32(dr["IdMarca"]),
-                                    Descripcion = dr["DesMarca"].ToString()
+                                    IdMarca = dr["IdMarca"] != DBNull.Value ? Convert.ToInt32(dr["IdMarca"]) : 0,
+                                    Descripcion = dr["DesMarca"] != DBNull.Value ? dr["DesMarca"].ToString() : string.Empty
                                 },
                                 oCategoria = new Categoria()
                                 {
-                                    IdCategoria = Convert.ToInt32(dr["IdCategoria"]),
-                                    Descripcion = dr["DesCategoria"].ToString()
+                                    IdCategoria = dr["IdCategoria"] != DBNull.Value ? Convert.ToInt32(dr["IdCategoria"]) : 0,
+                                    Descripcion = dr["DesCategoria"] != DBNull.Value ? dr["DesCategoria"].ToString() : string.Empty
                                 },
-                                Precio = Convert.ToDecimal(dr["Precio"], new CultureInfo("es-RD")),
-                                Stock = Convert.ToInt32(dr["Stock"]),
-                                RutaImagen = dr["RutaImagen"].ToString(),
-                                NombreImagen = dr["NombreImagen"].ToString(),
-                                Activo = Convert.ToBoolean(dr["Activo"])
+                                Precio = dr["Precio"] != DBNull.Value ? Convert.ToDecimal(dr["Precio"]) : 0m,
+                                Stock = dr["Stock"] != DBNull.Value ? Convert.ToInt32(dr["Stock"]) : 0,
+                                RutaImagen = dr["RutaImagen"] != DBNull.Value ? dr["RutaImagen"].ToString() : string.Empty,
+                                NombreImagen = dr["NombreImagen"] != DBNull.Value ? dr["NombreImagen"].ToString() : string.Empty,
+                                Activo = dr["Activo"] != DBNull.Value ? Convert.ToBoolean(dr["Activo"]) : false
                             });
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                // Esto te ayudará a ver el error real en la consola de Visual Studio mientras depuras
-                System.Diagnostics.Debug.WriteLine("ERROR SQL DETECTADO: " + ex.Message);
-                lista = new List<Producto>();
+                catch (Exception ex)
+                {
+                    // Lanza el error real si hay fallas con Azure SQL para poder identificar la causa exacta
+                    throw new Exception("Error en CD_Producto.Listar: " + ex.Message, ex);
+                }
             }
 
             return lista;
         }
 
-        //public List<Producto> Listar()
-        //{
-        //    List<Producto> lista = new List<Producto>();
-
-        //    try
-        //    {
-        //        using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
-        //        {
-        //            StringBuilder sb = new StringBuilder();
-        //            // Corregido: p.Apellido AS [Descripcion] para que coincida con tu entidad
-        //            // Corregido: LEFT JOIN para que los productos aparezcan siempre
-        //            sb.AppendLine("SELECT p.IdProducto, p.Nombre, p.Descripcion [Descripcion],");
-        //            sb.AppendLine("m.IdMarca, m.Descripcion [DesMarca],");
-        //            sb.AppendLine("c.IdCategoria, c.Descripcion [DesCategoria],");
-        //            sb.AppendLine("p.Precio, p.Stock, p.RutaImagen, p.NombreImagen, p.Activo");
-        //            sb.AppendLine("FROM PRODUCTO p");
-        //            sb.AppendLine("LEFT JOIN MARCA m on m.IdMarca = p.IdMarca");
-        //            sb.AppendLine("LEFT JOIN CATEGORIA c on c.IdCATEGORIA = p.IdCATEGORIA");
-
-        //            SqlCommand cmd = new SqlCommand(sb.ToString(), oconexion);
-        //            cmd.CommandType = CommandType.Text;
-
-        //            oconexion.Open();
-
-        //            using (SqlDataReader dr = cmd.ExecuteReader())
-        //            {
-        //                while (dr.Read())
-        //                {
-        //                    lista.Add(new Producto()
-        //                    {
-        //                        IdProducto = Convert.ToInt32(dr["IdProducto"]),
-        //                        Nombre = dr["Nombre"].ToString(),
-        //                        Descripcion = dr["Descripcion"].ToString(),
-        //                        oMarca = new Marca()
-        //                        {
-        //                            IdMarca = Convert.ToInt32(dr["IdMarca"]),
-        //                            Descripcion = dr["DesMarca"].ToString()
-        //                        },
-        //                        oCategoria = new Categoria()
-        //                        {
-        //                            IdCategoria = Convert.ToInt32(dr["IdCategoria"]),
-        //                            Descripcion = dr["DesCategoria"].ToString()
-        //                        },
-        //                        Precio = Convert.ToDecimal(dr["Precio"], new CultureInfo("es-RD")),
-        //                        Stock = Convert.ToInt32(dr["Stock"]),
-        //                        RutaImagen = dr["RutaImagen"].ToString(),
-        //                        NombreImagen = dr["NombreImagen"].ToString(),
-        //                        Activo = Convert.ToBoolean(dr["Activo"])
-        //                    });
-        //                }
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        System.Diagnostics.Debug.WriteLine("ERROR SQL: " + ex.Message);
-        //        lista = new List<Producto>();
-        //    }
-
-        //    return lista;
-        //}
-
         public int Registrar(Producto obj, out string Mensaje)
         {
-            int idautogenerado = 0;
+            int idProductoGenerado = 0;
             Mensaje = string.Empty;
+
             try
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("sp_RegistrarProducto", oconexion);
-                    cmd.Parameters.AddWithValue("Nombre", obj.Nombre);
-                    cmd.Parameters.AddWithValue("Descripcion", obj.Descripcion);
-                    cmd.Parameters.AddWithValue("IdMarca", obj.oMarca.IdMarca);
-                    cmd.Parameters.AddWithValue("IdCategoria", obj.oCategoria.IdCategoria);
-                    cmd.Parameters.AddWithValue("Precio", obj.Precio);
-                    cmd.Parameters.AddWithValue("Stock", obj.Stock);
-                    cmd.Parameters.AddWithValue("Activo", obj.Activo);
-                    cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
-                    cmd.Parameters.Add("Resultado", SqlDbType.Int).Direction = ParameterDirection.Output;
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    SqlCommand cmd = new SqlCommand("tienda.SP_EditarProducto", oconexion) // Se apunta al procedimiento dentro del esquema tienda
+                    {
+                        CommandType = CommandType.StoredProcedure
+                    };
+
+                    cmd.Parameters.Add("@Nombre", SqlDbType.VarChar, 100).Value = (object)obj.Nombre ?? DBNull.Value;
+                    cmd.Parameters.Add("@Descripcion", SqlDbType.VarChar, 500).Value = (object)obj.Descripcion ?? DBNull.Value;
+                    cmd.Parameters.Add("@IdMarca", SqlDbType.Int).Value = obj.oMarca != null ? obj.oMarca.IdMarca : 0;
+                    cmd.Parameters.Add("@IdCategoria", SqlDbType.Int).Value = obj.oCategoria != null ? obj.oCategoria.IdCategoria : 0;
+                    cmd.Parameters.Add("@Precio", SqlDbType.Decimal).Value = obj.Precio;
+                    cmd.Parameters.Add("@Stock", SqlDbType.Int).Value = obj.Stock;
+                    cmd.Parameters.Add("@Activo", SqlDbType.Bit).Value = obj.Activo;
+
+                    SqlParameter pResult = new SqlParameter("@Resultado", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                    SqlParameter pMensaje = new SqlParameter("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+
+                    cmd.Parameters.Add(pResult);
+                    cmd.Parameters.Add(pMensaje);
+
                     oconexion.Open();
                     cmd.ExecuteNonQuery();
-                    idautogenerado = Convert.ToInt32(cmd.Parameters["Resultado"].Value);
-                    Mensaje = cmd.Parameters["Mensaje"].Value.ToString();
+
+                    idProductoGenerado = pResult.Value != DBNull.Value ? Convert.ToInt32(pResult.Value) : 0;
+                    Mensaje = pMensaje.Value != DBNull.Value ? pMensaje.Value.ToString() : string.Empty;
                 }
             }
             catch (Exception ex)
             {
-                idautogenerado = 0;
+                idProductoGenerado = 0;
                 Mensaje = ex.Message;
             }
-            return idautogenerado;
+
+            return idProductoGenerado;
         }
 
         public bool Editar(Producto obj, out string Mensaje)
         {
             bool resultado = false;
             Mensaje = string.Empty;
+
             try
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("sp_EditarProducto", oconexion);
-                    cmd.Parameters.AddWithValue("IdProducto", obj.IdProducto);
-                    cmd.Parameters.AddWithValue("Nombre", obj.Nombre);
-                    cmd.Parameters.AddWithValue("Descripcion", obj.Descripcion);
-                    cmd.Parameters.AddWithValue("IdMarca", obj.oMarca.IdMarca);
-                    cmd.Parameters.AddWithValue("IdCategoria", obj.oCategoria.IdCategoria);
-                    cmd.Parameters.AddWithValue("Precio", obj.Precio);
-                    cmd.Parameters.AddWithValue("Stock", obj.Stock);
-                    cmd.Parameters.AddWithValue("Activo", obj.Activo);
-                    cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
-                    cmd.Parameters.Add("Resultado", SqlDbType.Bit).Direction = ParameterDirection.Output;
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    SqlCommand cmd = new SqlCommand("tienda.SP_EditarProducto", oconexion)
+                    {
+                        CommandType = CommandType.StoredProcedure
+                    };
+
+                    cmd.Parameters.Add("@IdProducto", SqlDbType.Int).Value = obj.IdProducto;
+                    cmd.Parameters.Add("@Nombre", SqlDbType.VarChar, 100).Value = (object)obj.Nombre ?? DBNull.Value;
+                    cmd.Parameters.Add("@Descripcion", SqlDbType.VarChar, 500).Value = (object)obj.Descripcion ?? DBNull.Value;
+                    cmd.Parameters.Add("@IdMarca", SqlDbType.Int).Value = obj.oMarca != null ? obj.oMarca.IdMarca : 0;
+                    cmd.Parameters.Add("@IdCategoria", SqlDbType.Int).Value = obj.oCategoria != null ? obj.oCategoria.IdCategoria : 0;
+                    cmd.Parameters.Add("@Precio", SqlDbType.Decimal).Value = obj.Precio;
+                    cmd.Parameters.Add("@Stock", SqlDbType.Int).Value = obj.Stock;
+                    cmd.Parameters.Add("@Activo", SqlDbType.Bit).Value = obj.Activo;
+
+                    SqlParameter pResult = new SqlParameter("@Resultado", SqlDbType.Bit) { Direction = ParameterDirection.Output };
+                    SqlParameter pMensaje = new SqlParameter("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+
+                    cmd.Parameters.Add(pResult);
+                    cmd.Parameters.Add(pMensaje);
+
                     oconexion.Open();
                     cmd.ExecuteNonQuery();
-                    resultado = Convert.ToBoolean(cmd.Parameters["Resultado"].Value);
-                    Mensaje = cmd.Parameters["Mensaje"].Value.ToString();
+
+                    resultado = pResult.Value != DBNull.Value && Convert.ToBoolean(pResult.Value);
+                    Mensaje = pMensaje.Value != DBNull.Value ? pMensaje.Value.ToString() : string.Empty;
                 }
             }
             catch (Exception ex)
@@ -202,6 +155,7 @@ namespace CapaDatos
                 resultado = false;
                 Mensaje = ex.Message;
             }
+
             return resultado;
         }
 
@@ -209,19 +163,32 @@ namespace CapaDatos
         {
             bool resultado = false;
             Mensaje = string.Empty;
+
             try
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    string query = "update producto set RutaImagen = @rutaimagen, NombreImagen = @nombreimagen where IdProducto = @idproducto";
-                    SqlCommand cmd = new SqlCommand(query, oconexion);
-                    cmd.Parameters.AddWithValue("@rutaimagen", obj.RutaImagen);
-                    cmd.Parameters.AddWithValue("@nombreimagen", obj.NombreImagen);
-                    cmd.Parameters.AddWithValue("@idproducto", obj.IdProducto);
-                    cmd.CommandType = CommandType.Text;
+                    string query = "UPDATE tienda.PRODUCTO SET RutaImagen = @RutaImagen, NombreImagen = @NombreImagen WHERE IdProducto = @IdProducto";
+
+                    SqlCommand cmd = new SqlCommand(query, oconexion)
+                    {
+                        CommandType = CommandType.Text
+                    };
+
+                    cmd.Parameters.Add("@RutaImagen", SqlDbType.VarChar, 100).Value = (object)obj.RutaImagen ?? DBNull.Value;
+                    cmd.Parameters.Add("@NombreImagen", SqlDbType.VarChar, 100).Value = (object)obj.NombreImagen ?? DBNull.Value;
+                    cmd.Parameters.Add("@IdProducto", SqlDbType.Int).Value = obj.IdProducto;
+
                     oconexion.Open();
-                    if (cmd.ExecuteNonQuery() > 0) resultado = true;
-                    else Mensaje = "No se pudo actualizar imagen";
+
+                    if (cmd.ExecuteNonQuery() > 0)
+                    {
+                        resultado = true;
+                    }
+                    else
+                    {
+                        Mensaje = "No se pudo actualizar la imagen del producto.";
+                    }
                 }
             }
             catch (Exception ex)
@@ -229,6 +196,7 @@ namespace CapaDatos
                 resultado = false;
                 Mensaje = ex.Message;
             }
+
             return resultado;
         }
 
@@ -236,19 +204,29 @@ namespace CapaDatos
         {
             bool resultado = false;
             Mensaje = string.Empty;
+
             try
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("sp_EliminarProducto", oconexion);
-                    cmd.Parameters.AddWithValue("IdProducto", id);
-                    cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
-                    cmd.Parameters.Add("Resultado", SqlDbType.Bit).Direction = ParameterDirection.Output;
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    SqlCommand cmd = new SqlCommand("tienda.SP_EliminarProducto", oconexion)
+                    {
+                        CommandType = CommandType.StoredProcedure
+                    };
+
+                    cmd.Parameters.Add("@IdProducto", SqlDbType.Int).Value = id;
+
+                    SqlParameter pResult = new SqlParameter("@Resultado", SqlDbType.Bit) { Direction = ParameterDirection.Output };
+                    SqlParameter pMensaje = new SqlParameter("@Mensaje", SqlDbType.VarChar, 500) { Direction = ParameterDirection.Output };
+
+                    cmd.Parameters.Add(pResult);
+                    cmd.Parameters.Add(pMensaje);
+
                     oconexion.Open();
                     cmd.ExecuteNonQuery();
-                    resultado = Convert.ToBoolean(cmd.Parameters["Resultado"].Value);
-                    Mensaje = cmd.Parameters["Mensaje"].Value.ToString();
+
+                    resultado = pResult.Value != DBNull.Value && Convert.ToBoolean(pResult.Value);
+                    Mensaje = pMensaje.Value != DBNull.Value ? pMensaje.Value.ToString() : string.Empty;
                 }
             }
             catch (Exception ex)
@@ -256,6 +234,7 @@ namespace CapaDatos
                 resultado = false;
                 Mensaje = ex.Message;
             }
+
             return resultado;
         }
     }

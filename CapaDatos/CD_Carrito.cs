@@ -16,7 +16,7 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("sp_AgregarCarrito", oconexion);
+                    SqlCommand cmd = new SqlCommand("tienda.sp_AgregarCarrito", oconexion);
                     cmd.Parameters.AddWithValue("IdCliente", idCliente);
                     cmd.Parameters.AddWithValue("IdProducto", idProducto);
                     cmd.Parameters.AddWithValue("Cantidad", cantidad);
@@ -44,7 +44,7 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("sp_ListarCarrito", oconexion);
+                    SqlCommand cmd = new SqlCommand("tienda.sp_ListarCarrito", oconexion);
                     cmd.Parameters.AddWithValue("IdCliente", idCliente);
                     cmd.CommandType = CommandType.StoredProcedure;
                     oconexion.Open();
@@ -83,7 +83,7 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("sp_ModificarCarrito", oconexion);
+                    SqlCommand cmd = new SqlCommand("tienda.sp_ModificarCarrito", oconexion);
                     cmd.Parameters.AddWithValue("IdCarrito", idCarrito);
                     cmd.Parameters.AddWithValue("Cantidad", cantidad);
                     cmd.Parameters.Add("Resultado", SqlDbType.Bit).Direction = ParameterDirection.Output;
@@ -111,7 +111,7 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("sp_EliminarCarrito", oconexion);
+                    SqlCommand cmd = new SqlCommand("tienda.sp_EliminarCarrito", oconexion);
                     cmd.Parameters.AddWithValue("IdCarrito", idCarrito);
                     cmd.Parameters.Add("Resultado", SqlDbType.Bit).Direction = ParameterDirection.Output;
                     cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
@@ -137,7 +137,7 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("sp_ContarCarrito", oconexion);
+                    SqlCommand cmd = new SqlCommand("tienda.sp_ContarCarrito", oconexion);
                     cmd.Parameters.AddWithValue("IdCliente", idCliente);
                     cmd.Parameters.Add("Resultado", SqlDbType.Int).Direction = ParameterDirection.Output;
                     cmd.CommandType = CommandType.StoredProcedure;

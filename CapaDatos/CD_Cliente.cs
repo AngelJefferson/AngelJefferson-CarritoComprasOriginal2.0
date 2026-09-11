@@ -16,19 +16,25 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("sp_RegistrarCliente", oconexion);
-                    cmd.Parameters.AddWithValue("Nombres", obj.Nombres);
-                    cmd.Parameters.AddWithValue("Apellidos", obj.Apellidos);
-                    cmd.Parameters.AddWithValue("Correo", obj.Correo);
-                    cmd.Parameters.AddWithValue("Clave", obj.Clave);
-                    cmd.Parameters.AddWithValue("Provincia", obj.Provincia ?? (object)DBNull.Value);
-                    cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
-                    cmd.Parameters.Add("Resultado", SqlDbType.Int).Direction = ParameterDirection.Output;
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    oconexion.Open();
-                    cmd.ExecuteNonQuery();
-                    idautogenerado = Convert.ToInt32(cmd.Parameters["Resultado"].Value);
-                    Mensaje = cmd.Parameters["Mensaje"].Value.ToString();
+                    using (SqlCommand cmd = new SqlCommand("tienda.sp_RegistrarCliente", oconexion))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        cmd.Parameters.AddWithValue("@Nombres", obj.Nombres ?? Convert.DBNull);
+                        cmd.Parameters.AddWithValue("@Apellidos", obj.Apellidos ?? Convert.DBNull);
+                        cmd.Parameters.AddWithValue("@Correo", obj.Correo ?? Convert.DBNull);
+                        cmd.Parameters.AddWithValue("@Clave", obj.Clave ?? Convert.DBNull);
+                        cmd.Parameters.AddWithValue("@Provincia", obj.Provincia ?? Convert.DBNull);
+
+                        cmd.Parameters.Add("@Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add("@Resultado", SqlDbType.Int).Direction = ParameterDirection.Output;
+
+                        oconexion.Open();
+                        cmd.ExecuteNonQuery();
+
+                        idautogenerado = Convert.ToInt32(cmd.Parameters["@Resultado"].Value);
+                        Mensaje = cmd.Parameters["@Mensaje"].Value?.ToString() ?? string.Empty;
+                    }
                 }
             }
             catch (Exception ex)
@@ -47,35 +53,41 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("sp_LoginCliente", oconexion);
-                    cmd.Parameters.AddWithValue("Correo", correo);
-                    cmd.Parameters.AddWithValue("Clave", clave);
-                    cmd.Parameters.Add("Resultado", SqlDbType.Int).Direction = ParameterDirection.Output;
-                    cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    oconexion.Open();
-                    cmd.ExecuteNonQuery();
-
-                    int idCliente = Convert.ToInt32(cmd.Parameters["Resultado"].Value);
-                    Mensaje = cmd.Parameters["Mensaje"].Value.ToString();
-
-                    if (idCliente > 0)
+                    using (SqlCommand cmd = new SqlCommand("tienda.sp_LoginCliente", oconexion))
                     {
-                        using (SqlCommand cmd2 = new SqlCommand("SELECT IdCliente, Nombres, Apellidos, Correo FROM CLIENTE WHERE IdCliente = @id", oconexion))
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@Correo", correo ?? string.Empty);
+                        cmd.Parameters.AddWithValue("@Clave", clave ?? string.Empty);
+
+                        cmd.Parameters.Add("@Resultado", SqlDbType.Int).Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add("@Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
+
+                        oconexion.Open();
+                        cmd.ExecuteNonQuery();
+
+                        int idCliente = Convert.ToInt32(cmd.Parameters["@Resultado"].Value);
+                        Mensaje = cmd.Parameters["@Mensaje"].Value?.ToString() ?? string.Empty;
+
+                        if (idCliente > 0)
                         {
-                            cmd2.Parameters.AddWithValue("@id", idCliente);
-                            cmd2.CommandType = CommandType.Text;
-                            using (SqlDataReader dr = cmd2.ExecuteReader())
+                            string query = "SELECT IdCliente, Nombres, Apellidos, Correo FROM tienda.CLIENTE WHERE IdCliente = @id";
+                            using (SqlCommand cmd2 = new SqlCommand(query, oconexion))
                             {
-                                if (dr.Read())
+                                cmd2.CommandType = CommandType.Text;
+                                cmd2.Parameters.AddWithValue("@id", idCliente);
+
+                                using (SqlDataReader dr = cmd2.ExecuteReader())
                                 {
-                                    obj = new Cliente()
+                                    if (dr.Read())
                                     {
-                                        IdCliente = Convert.ToInt32(dr["IdCliente"]),
-                                        Nombres = dr["Nombres"].ToString(),
-                                        Apellidos = dr["Apellidos"].ToString(),
-                                        Correo = dr["Correo"].ToString()
-                                    };
+                                        obj = new Cliente()
+                                        {
+                                            IdCliente = Convert.ToInt32(dr["IdCliente"]),
+                                            Nombres = dr["Nombres"].ToString(),
+                                            Apellidos = dr["Apellidos"].ToString(),
+                                            Correo = dr["Correo"].ToString()
+                                        };
+                                    }
                                 }
                             }
                         }
@@ -97,22 +109,27 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    SqlCommand cmd = new SqlCommand("SELECT IdCliente, Nombres, Apellidos, Correo, ISNULL(Provincia, 'No especificada') as Provincia, FechaRegistro FROM CLIENTE ORDER BY FechaRegistro DESC", oconexion);
-                    cmd.CommandType = CommandType.Text;
-                    oconexion.Open();
-                    using (SqlDataReader dr = cmd.ExecuteReader())
+                    string query = "SELECT IdCliente, Nombres, Apellidos, Correo, ISNULL(Provincia, 'No especificada') as Provincia, FechaRegistro FROM tienda.CLIENTE ORDER BY FechaRegistro DESC";
+
+                    using (SqlCommand cmd = new SqlCommand(query, oconexion))
                     {
-                        while (dr.Read())
+                        cmd.CommandType = CommandType.Text;
+                        oconexion.Open();
+
+                        using (SqlDataReader dr = cmd.ExecuteReader())
                         {
-                            lista.Add(new Cliente()
+                            while (dr.Read())
                             {
-                                IdCliente = Convert.ToInt32(dr["IdCliente"]),
-                                Nombres = dr["Nombres"].ToString(),
-                                Apellidos = dr["Apellidos"].ToString(),
-                                Correo = dr["Correo"].ToString(),
-                                Provincia = dr["Provincia"].ToString(),
-                                FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
-                            });
+                                lista.Add(new Cliente()
+                                {
+                                    IdCliente = Convert.ToInt32(dr["IdCliente"]),
+                                    Nombres = dr["Nombres"].ToString(),
+                                    Apellidos = dr["Apellidos"].ToString(),
+                                    Correo = dr["Correo"].ToString(),
+                                    Provincia = dr["Provincia"].ToString(),
+                                    FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"])
+                                });
+                            }
                         }
                     }
                 }
